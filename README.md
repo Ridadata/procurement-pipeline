@@ -140,8 +140,7 @@ procurement-pipeline/
 │   ├── dags/
 │   │   └── procurement_pipeline_dag.py  # Main DAG (6 tasks, daily @ 22:00)
 │   ├── logs/                            # Task execution logs
-│   ├── plugins/                         # Custom Airflow plugins
-│   └── README.md
+│   └── plugins/                         # Custom Airflow plugins
 │
 ├── 📂 scripts/                          # Utility scripts
 │   ├── data_generation/                 # Test data generators
@@ -166,8 +165,7 @@ procurement-pipeline/
 │
 ├── 📂 database/                         # Database schemas
 │   ├── schema.sql                       # PostgreSQL tables DDL
-│   ├── db_connection.py                 # Connection utilities
-│   └── load_master_data.py              # Initial data loading
+│   └── db_connection.py                 # Connection utilities
 │
 ├── 📂 config/                           # Configuration
 │   ├── config.py                        # Database & HDFS configs
@@ -224,14 +222,8 @@ procurement-pipeline/
    # For Windows PowerShell:
    Copy-Item .env.example .env
    ```
-   **Security Note:** 
-   - Default values in `.env.example` work for local development
-   - For production, update passwords in your `.env` file:
-     - `POSTGRES_PASSWORD` - PostgreSQL master database password
-     - `AIRFLOW_POSTGRES_PASSWORD` - Airflow metadata database password
-     - `AIRFLOW_FERNET_KEY` - Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-     - `AIRFLOW_WEBSERVER_SECRET_KEY` - Random secret key
-     - `AIRFLOW_WWW_USER_PASSWORD` - Airflow admin UI password
+   
+   **Note:** Default values work for local development. For production, update passwords in `.env`
 
 4. **Start all services**
    ```bash
@@ -256,8 +248,6 @@ procurement-pipeline/
    ```
 
 ✅ **Your environment is ready!**
-
-**Note:** Master data (suppliers, products, warehouses, rules) will be automatically loaded to PostgreSQL when you run the data generation script in the next step.
 
 ---
 
@@ -680,56 +670,39 @@ docker exec namenode hdfs dfs -setrep -w 1 /procurement/
 
 ## 🤝 Contributing
 
-This is an academic project for **- Fondements Big Data**. Contributions and suggestions are welcome!
-
-### Development Setup
+Contributions and suggestions are welcome!
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and test thoroughly
-4. Commit: `git commit -m 'feat: add your feature'`
-5. Push: `git push origin feature/your-feature`
-6. Open a Pull Request
-
-### Code Style
-
-- Python: Follow PEP 8
-- SQL: Uppercase keywords, lowercase identifiers
-- Comments: Clear and concise
+3. Commit: `git commit -m 'feat: add your feature'`
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request
 
 ---
 
-##  License
+## 📝 License
 
-This project is part of an academic curriculum 
-
-**Course:** Fondements Big Data  
+Academic project - **Fondements Big Data**  
 **Academic Year:** 2025-2026
 
 ---
 
-##  Contact & Support
+## 📞 Contact
 
-For questions, issues, or suggestions:
-
--  Open an issue on GitHub
--  Contact the maintainers
--  Check [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed documentation
+For questions or suggestions, open an issue on GitHub.
 
 ---
 
 ##  Key Learnings
 
-This project demonstrates:
-
--  **Distributed Storage** with Hadoop HDFS
--  **Federated Queries** with Presto (cross-system JOINs)
--  **Workflow Orchestration** with Apache Airflow
--  **Data Quality Validation** in production pipelines
--  **Batch Processing** patterns for Big Data
--  **Containerization** with Docker Compose
--  **Data Lake Architecture** (raw/processed/output zones)
--  **OLTP + OLAP** hybrid systems
+-  Distributed Storage with Hadoop HDFS
+-  Federated Queries with Presto (cross-system JOINs)
+-  Workflow Orchestration with Apache Airflow
+-  Data Quality Validation in production pipelines
+-  Batch Processing patterns for Big Data
+-  Containerization with Docker Compose
+-  Data Lake Architecture (raw/processed/output zones)
+-  OLTP + OLAP hybrid systems
 
 ---
 
@@ -776,14 +749,10 @@ cd docker && docker-compose down
 
 ##  Acknowledgments
 
-- **ENSA Al-Hoceima** for the Big Data curriculum
-- **Apache Software Foundation** for Hadoop, Presto, and Airflow
-- **PostgreSQL Global Development Group**
-- **Docker Community**
-
----
-
-** If you find this project helpful, please star the repository!**
+- ENSA Al-Hoceima for the Big Data curriculum
+- Apache Software Foundation for Hadoop, Presto, and Airflow
+- PostgreSQL Global Development Group
+- Docker Community
 
 ---
 
