@@ -345,7 +345,7 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 
 ### Airflow DAG Graph View
 
-![Airflow DAG Graph](docs/screenshots/airflow-dag-graph.png)
+![Airflow DAG Graph](docs/images/airflow-dag-graph.png)
 
 *The complete procurement pipeline with 6 tasks: check_data_availability → create_hive_tables → validate_data_quality → calculate_net_demand → generate_supplier_orders → cleanup_temp_tables*
 
