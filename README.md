@@ -244,12 +244,9 @@ procurement-pipeline/
    powershell scripts/setup_hdfs.ps1
    ```
 
-7. **Load master data to PostgreSQL**
-   ```bash
-   python database/load_master_data.py
-   ```
-
 ✅ **Your environment is ready!**
+
+**Note:** Master data (suppliers, products, warehouses, rules) will be automatically loaded to PostgreSQL when you run the data generation script in the next step.
 
 ---
 
