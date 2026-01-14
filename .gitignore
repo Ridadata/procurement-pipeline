@@ -37,16 +37,7 @@ wheels/
 # Docker volumes data
 docker/presto/data/
 
-# Data files (keep structure, ignore generated data)
-data/raw/orders/*/*.json
-data/raw/stock/*/*.json
-data/processed/**/*.csv
-data/processed/**/*.json
-data/output/**/*.csv
-data/output/**/*.json
-data/logs/**/*.log
-
-# Keep directory structure
+# Keep directory structure with .gitkeep files
 !data/raw/orders/.gitkeep
 !data/raw/stock/.gitkeep
 !data/processed/.gitkeep
