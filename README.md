@@ -216,11 +216,22 @@ procurement-pipeline/
    pip install -r requirements.txt
    ```
 
-3. **Configure environment** (optional)
+3. **Configure environment variables**
    ```bash
-   cp config/.env.example .env
-   # Edit .env with your settings (defaults work out-of-box)
+   # Copy the example file
+   cp .env.example .env
+   
+   # For Windows PowerShell:
+   Copy-Item .env.example .env
    ```
+   **Security Note:** 
+   - Default values in `.env.example` work for local development
+   - For production, update passwords in your `.env` file:
+     - `POSTGRES_PASSWORD` - PostgreSQL master database password
+     - `AIRFLOW_POSTGRES_PASSWORD` - Airflow metadata database password
+     - `AIRFLOW_FERNET_KEY` - Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+     - `AIRFLOW_WEBSERVER_SECRET_KEY` - Random secret key
+     - `AIRFLOW_WWW_USER_PASSWORD` - Airflow admin UI password
 
 4. **Start all services**
    ```bash
@@ -669,7 +680,7 @@ docker exec namenode hdfs dfs -setrep -w 1 /procurement/
 
 ## 🤝 Contributing
 
-This is an academic project for **ENSA Al-Hoceima - Fondements Big Data**. Contributions and suggestions are welcome!
+This is an academic project for **- Fondements Big Data**. Contributions and suggestions are welcome!
 
 ### Development Setup
 
@@ -690,7 +701,7 @@ This is an academic project for **ENSA Al-Hoceima - Fondements Big Data**. Contr
 
 ##  License
 
-This project is part of an academic curriculum at **ENSA Al-Hoceima**.
+This project is part of an academic curriculum 
 
 **Course:** Fondements Big Data  
 **Academic Year:** 2025-2026
