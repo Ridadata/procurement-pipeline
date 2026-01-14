@@ -135,7 +135,7 @@ A production-ready data pipeline that processes Point-of-Sale (POS) orders and w
 procurement-pipeline/
 ├── 📂 airflow/                          # Apache Airflow orchestration
 │   ├── dags/
-│   │   └── procurement_pipeline_dag.py  # Main DAG (6 tasks, daily @ 22:00)
+│   │   └── procurement_pipeline_dag.py  # Main DAG (7 tasks, daily @ 22:00)
 │   ├── logs/                            # Task execution logs
 │   └── plugins/                         # Custom Airflow plugins
 │
@@ -239,8 +239,8 @@ procurement-pipeline/
    # Linux/Mac:
    bash scripts/setup_hdfs.sh
    
-   # Windows PowerShell:
-   powershell scripts/setup_hdfs.ps1
+   # Windows PowerShell (if script execution disabled):
+   docker exec hadoop_client hdfs dfs -mkdir -p /procurement/raw/orders /procurement/raw/stock /procurement/processed/aggregated_orders /procurement/processed/net_demand /procurement/output/supplier_orders /procurement/logs/exceptions
    ```
 
 ✅ **Your environment is ready!**
@@ -347,7 +347,7 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 
 ![Airflow DAG Graph](docs/images/airflow-dag-graph.png)
 
-*The complete procurement pipeline with 6 tasks: check_data_availability → create_hive_tables → validate_data_quality → calculate_net_demand → generate_supplier_orders → cleanup_temp_tables*
+*The complete procurement pipeline with 7 tasks: initialize_presto_schema → check_data_availability → create_hive_tables → validate_data_quality → calculate_net_demand → generate_supplier_orders → cleanup_temp_tables*
 
 ---
 
@@ -357,21 +357,28 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 1: CHECK DATA AVAILABILITY                                  │
+│ Step 1: INITIALIZE PRESTO SCHEMA                                 │
+│ • CREATE SCHEMA IF NOT EXISTS hive.default                      │
+│ • Verify schema creation (idempotent setup)                      │
+│ • Ensures Presto can create tables on first run                  │
+└───────────────────────┬──────────────────────────────────────────┘
+                        ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Step 2: CHECK DATA AVAILABILITY                                  │
 │ • Verify HDFS files exist for execution date                     │
 │ • Count POS order files (expect 5)                               │
 │ • Count warehouse stock files (expect 3)                         │
 └───────────────────────┬──────────────────────────────────────────┘
                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 2: CREATE HIVE TABLES                                       │
+│ Step 3: CREATE HIVE TABLES                                       │
 │ • CREATE EXTERNAL TABLE orders (location: HDFS /raw/orders/)    │
 │ • CREATE EXTERNAL TABLE stock (location: HDFS /raw/stock/)      │
 │ • Format: JSON                                                   │
 └───────────────────────┬──────────────────────────────────────────┘
                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 3: VALIDATE DATA QUALITY                                    │
+│ Step 4: VALIDATE DATA QUALITY                                    │
 │ • Check: All products have primary supplier mapping             │
 │ • Check: No demand spikes >500% vs safety stock                 │
 │ • Check: No zero available stock with positive reserved         │
@@ -379,7 +386,7 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 └───────────────────────┬──────────────────────────────────────────┘
                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 4: CALCULATE NET DEMAND                                     │
+│ Step 5: CALCULATE NET DEMAND                                     │
 │ • Aggregate orders by SKU across all stores                     │
 │ • Join with stock levels by SKU (sum across warehouses)         │
 │ • Formula: max(0, orders + safety_stock - free_stock)           │
@@ -387,7 +394,7 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 └───────────────────────┬──────────────────────────────────────────┘
                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 5: GENERATE SUPPLIER ORDERS                                 │
+│ Step 6: GENERATE SUPPLIER ORDERS                                 │
 │ • Join net_demand with replenishment_rules                      │
 │ • Apply case rounding: CEIL(net_demand / case_size) * case_size│
 │ • Enforce MOQ: max(order_qty, min_order_quantity)               │
@@ -396,7 +403,7 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 └───────────────────────┬──────────────────────────────────────────┘
                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ Step 6: CLEANUP TEMP TABLES                                      │
+│ Step 7: CLEANUP TEMP TABLES                                      │
 │ • DROP TABLE IF EXISTS hive.default.orders                      │
 │ • DROP TABLE IF EXISTS hive.default.stock                       │
 │ • Log execution metrics                                          │
@@ -748,7 +755,7 @@ cd docker && docker-compose down
 - **Data Generators:** 6
 - **HDFS Directories:** 7
 - **PostgreSQL Tables:** 5
-- **Airflow Tasks:** 6
+- **Airflow Tasks:** 7
 - **Lines of Code:** ~2000+
 
 ---

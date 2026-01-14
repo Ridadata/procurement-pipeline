@@ -93,7 +93,7 @@ services:
     environment:
       POSTGRES_USER: ${AIRFLOW_POSTGRES_USER:-airflow}
       POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD:-airflow}
-      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:-airflow_db}
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:-airflow}
     ports:
       - "5434:5432"
     volumes:

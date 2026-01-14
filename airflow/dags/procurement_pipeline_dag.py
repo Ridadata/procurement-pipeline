@@ -38,8 +38,31 @@ dag = DAG(
     tags=['procurement', 'batch', 'supplier-orders'],
 )
 
+def initialize_presto_schema(**context):
+    """Task 1: Initialize Presto Hive schema (idempotent)"""
+    print("Initializing Presto Hive schema...")
+    
+    # Create default schema if not exists
+    cmd = ['docker', 'exec', 'presto', 'presto-cli', '--execute', 
+           'CREATE SCHEMA IF NOT EXISTS hive.default']
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    if result.returncode != 0:
+        raise Exception(f"Failed to create Hive schema: {result.stderr}")
+    
+    # Verify schema exists
+    cmd_verify = ['docker', 'exec', 'presto', 'presto-cli', '--execute', 
+                  'SHOW SCHEMAS FROM hive']
+    result = subprocess.run(cmd_verify, capture_output=True, text=True)
+    
+    if 'default' not in result.stdout:
+        raise Exception("Hive default schema not found after creation")
+    
+    print("✓ Presto Hive schema initialized")
+    return True
+
 def check_data_availability(**context):
-    """Task 1: Check if POS files and stock snapshots are available"""
+    """Task 2: Check if POS files and stock snapshots are available"""
     execution_date = context['ds']
     
     # Check HDFS for orders
@@ -60,7 +83,7 @@ def check_data_availability(**context):
     return True
 
 def create_hive_tables(**context):
-    """Task 2: Create/refresh Hive external tables"""
+    """Task 3: Create/refresh Hive external tables"""
     execution_date = context['ds']
     
     queries = [
@@ -105,7 +128,7 @@ def create_hive_tables(**context):
     return True
 
 def validate_data_quality(**context):
-    """Task 3: Validate data quality and detect anomalies"""
+    """Task 4: Validate data quality and detect anomalies"""
     exceptions = []
     
     # Check for missing supplier mappings
@@ -146,7 +169,7 @@ def validate_data_quality(**context):
     return True
 
 def calculate_net_demand(**context):
-    """Task 4: Calculate net demand per SKU"""
+    """Task 5: Calculate net demand per SKU"""
     execution_date = context['ds']
     import tempfile
     import os
@@ -258,7 +281,7 @@ def calculate_net_demand(**context):
     return True
 
 def generate_supplier_orders(**context):
-    """Task 5: Generate supplier orders"""
+    """Task 6: Generate supplier orders"""
     execution_date = context['ds']
     
     query = """
@@ -311,7 +334,7 @@ def generate_supplier_orders(**context):
     return output_file
 
 def cleanup_temp_tables(**context):
-    """Task 6: Cleanup temporary tables"""
+    """Task 7: Cleanup temporary tables"""
     subprocess.run([
         'docker', 'exec', 'presto', 'presto-cli', '--execute',
         'DROP TABLE IF EXISTS hive.default.net_demand'
@@ -320,6 +343,12 @@ def cleanup_temp_tables(**context):
     return True
 
 # Define tasks
+task_init_schema = PythonOperator(
+    task_id='initialize_presto_schema',
+    python_callable=initialize_presto_schema,
+    dag=dag,
+)
+
 task_check_data = PythonOperator(
     task_id='check_data_availability',
     python_callable=check_data_availability,
@@ -357,4 +386,4 @@ task_cleanup = PythonOperator(
 )
 
 # Define task dependencies (pipeline flow)
-task_check_data >> task_create_tables >> task_validate_quality >> task_calculate_demand >> task_generate_orders >> task_cleanup
+task_init_schema >> task_check_data >> task_create_tables >> task_validate_quality >> task_calculate_demand >> task_generate_orders >> task_cleanup
