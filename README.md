@@ -42,7 +42,6 @@ A production-ready data pipeline that processes Point-of-Sale (POS) orders and w
 
 ---
 
-## 🏗 Architecture
 
 ## 🏗 Architecture
 
@@ -184,8 +183,7 @@ procurement-pipeline/
 ├── 📄 requirements.txt                  # Python dependencies
 ├── 📄 .gitignore                        # Git exclusions
 ├── 📄 README.md                         # This file
-├── 📄 PROJECT_STRUCTURE.md              # Detailed documentation
-└── 📄 PRE_COMMIT_CHECKLIST.md           # GitHub push checklist
+
 ```
 
 ---
@@ -343,7 +341,17 @@ SUP002,Office Goods Ltd,SKU00015,Product B,23,6,24
 
 ---
 
-## 🔄 Data Flow
+## � Screenshots
+
+### Airflow DAG Graph View
+
+![Airflow DAG Graph](docs/screenshots/airflow-dag-graph.png)
+
+*The complete procurement pipeline with 6 tasks: check_data_availability → create_hive_tables → validate_data_quality → calculate_net_demand → generate_supplier_orders → cleanup_temp_tables*
+
+---
+
+## �🔄 Data Flow
 
 ### Pipeline Execution Flow
 
