@@ -1,0 +1,218 @@
+services:
+
+  # ============================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================
+
+  # PostgreSQL – Master Data
+  postgres:
+    image: postgres:15
+    container_name: procurement_postgres
+    environment:
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: procurement123
+      POSTGRES_DB: procurement_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - procurement_network
+
+  # Hadoop NameNode
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    environment:
+      - CLUSTER_NAME=procurement
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=2
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    networks:
+      - procurement_network
+
+  # Hadoop DataNode
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_datanode_data_dir=file:///hadoop/dfs/data
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - procurement_network
+
+  # Hadoop client
+  hadoop-client:
+    image: bde2020/hadoop-base:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop_client
+    command: tail -f /dev/null
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+    volumes:
+      - ../data:/data
+      - ../scripts:/scripts
+    networks:
+      - procurement_network
+
+  # Presto
+  presto:
+    image: prestodb/presto:latest
+    container_name: presto
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./presto:/opt/presto-server/etc
+      - presto_data:/data
+    environment:
+      - PRESTO_MAX_MEMORY=4GB
+    depends_on:
+      - namenode
+      - postgres
+    networks:
+      - procurement_network
+
+  # ============================================
+  # AIRFLOW SERVICES
+  # ============================================
+
+  # PostgreSQL for Airflow metadata
+  airflow-postgres:
+    image: postgres:13
+    container_name: airflow_postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5434:5432"
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    networks:
+      - procurement_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  # Airflow Webserver
+  airflow-webserver:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: airflow_webserver
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=procurement_secret_key_2026
+      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
+      - ../data:/data
+      - ../scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8081:8080"
+    command: webserver
+    networks:
+      - procurement_network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: airflow_scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-webserver:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
+      - ../data:/data
+      - ../scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: scheduler
+    networks:
+      - procurement_network
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Airflow Init (one-time initialization)
+  airflow-init:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: airflow_init
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _AIRFLOW_DB_MIGRATE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../airflow/logs:/opt/airflow/logs
+      - ../airflow/plugins:/opt/airflow/plugins
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@procurement.com \
+          --password admin
+    networks:
+      - procurement_network
+    restart: "no"
+
+volumes:
+  postgres_data:
+  namenode_data:
+  datanode_data:
+  presto_data:
+  airflow_postgres_data:
+
+networks:
+  procurement_network:
+    driver: bridge
