@@ -132,8 +132,6 @@ A production-ready data pipeline that processes Point-of-Sale (POS) orders and w
 
 ## 📁 Project Structure
 
-## 📁 Project Structure
-
 ```
 procurement-pipeline/
 ├── 📂 airflow/                          # Apache Airflow orchestration
