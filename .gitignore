@@ -78,3 +78,7 @@ airflow_postgres_data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment variables
+.env
+config/.env
